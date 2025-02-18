@@ -1,0 +1,45 @@
+// ==UserScript==
+// @name         YouTube Shorts Metadata Hider
+// @namespace    http://tampermonkey.net/
+// @version      1.2
+// @description  滑鼠進入 Shorts 時顯示 UI，離開 1 秒後隱藏
+// @author       ntcue (modified by assistant)
+// @match        https://*.youtube.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const HIDE_DELAY = 1000; // 1 秒延遲隱藏
+    let hideTimeout = null;
+
+    const metadataSelector = '.metadata-container';
+    const shortsContainerSelector = '#shorts-container';
+
+    function setMetadataVisibility(visible) {
+        document.querySelectorAll(metadataSelector).forEach(container => {
+            container.style.opacity = visible ? '1' : '0';
+        });
+    }
+
+    function onMouseEnter(event) {
+        if (event.target.closest(shortsContainerSelector)) {
+            setMetadataVisibility(true);
+            clearTimeout(hideTimeout);
+        }
+    }
+
+    function onMouseLeave(event) {
+        if (event.target.closest(shortsContainerSelector)) {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => setMetadataVisibility(false), HIDE_DELAY);
+        }
+    }
+
+    document.querySelector(shortsContainerSelector).addEventListener('mouseenter', onMouseEnter, true);
+    document.querySelector(shortsContainerSelector).addEventListener('mouseleave', onMouseLeave, true);
+
+    // 初始隱藏
+    setMetadataVisibility(false);
+})();
