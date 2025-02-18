@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Shorts Metadata Hider
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  滑鼠進入 Shorts 時顯示 UI，離開 1 秒後隱藏
+// @version      1.3
+// @description  滑鼠進入 Shorts 時顯示 UI，離開 10.5 秒後隱藏
 // @author       ntcue (modified by assistant)
 // @match        https://*.youtube.com/*
 // @grant        none
@@ -11,41 +11,41 @@
 (function() {
     'use strict';
 
-    const HIDE_DELAY = 1000; // 1 秒延遲隱藏
     let hideTimeout = null;
+    const HIDE_DELAY = 500; // 0.5 秒延遲隱藏
 
     const metadataSelector = '.metadata-container';
     const shortsContainerSelector = '#shorts-container';
 
-    // 設置 metadata 的可見性
-    function setMetadataVisibility(visible) {
-        const containers = document.querySelectorAll(metadataSelector);
-        if (containers.length === 0) return; // 如果沒有找到元素，直接返回
-
-        containers.forEach(container => {
-            container.style.opacity = visible ? '1' : '0';
+    function setMetadataOpacity(opacity) {
+        document.querySelectorAll(metadataSelector).forEach(container => {
+            container.style.opacity = opacity;
         });
     }
 
-    // 滑鼠進入處理函數
+    function hideMetadata() {
+        setMetadataOpacity('0');
+    }
+
+    function showMetadata() {
+        setMetadataOpacity('1');
+    }
+
     function onMouseEnter(event) {
-        const shortsContainer = event.target.closest(shortsContainerSelector);
-        if (shortsContainer) {
-            setMetadataVisibility(true);
+        if (event.target.closest(shortsContainerSelector)) {
+            showMetadata();
             clearTimeout(hideTimeout);
         }
     }
 
-    // 滑鼠離開處理函數
     function onMouseLeave(event) {
-        const shortsContainer = event.target.closest(shortsContainerSelector);
-        if (shortsContainer) {
+        if (event.target.closest(shortsContainerSelector)) {
             clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(() => setMetadataVisibility(false), HIDE_DELAY);
+            hideTimeout = setTimeout(hideMetadata, HIDE_DELAY);
         }
     }
 
-    // 使用 MutationObserver 處理動態內容
+    // 使用 MutationObserver 監聽 DOM 變動，處理動態內容
     const observer = new MutationObserver((mutations) => {
         const shortsContainer = document.querySelector(shortsContainerSelector);
         if (shortsContainer) {
@@ -58,5 +58,5 @@
     observer.observe(document.body, { childList: true, subtree: true });
 
     // 初始隱藏
-    setMetadataVisibility(false);
+    hideMetadata();
 })();
