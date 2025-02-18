@@ -17,28 +17,45 @@
     const metadataSelector = '.metadata-container';
     const shortsContainerSelector = '#shorts-container';
 
+    // 設置 metadata 的可見性
     function setMetadataVisibility(visible) {
-        document.querySelectorAll(metadataSelector).forEach(container => {
+        const containers = document.querySelectorAll(metadataSelector);
+        if (containers.length === 0) return; // 如果沒有找到元素，直接返回
+
+        containers.forEach(container => {
             container.style.opacity = visible ? '1' : '0';
         });
     }
 
+    // 滑鼠進入處理函數
     function onMouseEnter(event) {
-        if (event.target.closest(shortsContainerSelector)) {
+        const shortsContainer = event.target.closest(shortsContainerSelector);
+        if (shortsContainer) {
             setMetadataVisibility(true);
             clearTimeout(hideTimeout);
         }
     }
 
+    // 滑鼠離開處理函數
     function onMouseLeave(event) {
-        if (event.target.closest(shortsContainerSelector)) {
+        const shortsContainer = event.target.closest(shortsContainerSelector);
+        if (shortsContainer) {
             clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => setMetadataVisibility(false), HIDE_DELAY);
         }
     }
 
-    document.querySelector(shortsContainerSelector).addEventListener('mouseenter', onMouseEnter, true);
-    document.querySelector(shortsContainerSelector).addEventListener('mouseleave', onMouseLeave, true);
+    // 使用 MutationObserver 處理動態內容
+    const observer = new MutationObserver((mutations) => {
+        const shortsContainer = document.querySelector(shortsContainerSelector);
+        if (shortsContainer) {
+            shortsContainer.addEventListener('mouseenter', onMouseEnter, true);
+            shortsContainer.addEventListener('mouseleave', onMouseLeave, true);
+            observer.disconnect(); // 停止觀察，避免重複綁定
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     // 初始隱藏
     setMetadataVisibility(false);
