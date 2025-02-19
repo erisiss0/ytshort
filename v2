@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Shorts Metadata Hider
 // @namespace    http://tampermonkey.net/
-// @version      1.3
-// @description  滑鼠進入 Shorts 時顯示 UI，離開 10.5 秒後隱藏
+// @version      1.4
+// @description  滑鼠進入 Shorts 影片時顯示該影片 UI，離開 0.5 秒後隱藏
 // @author       ntcue (modified by assistant)
 // @match        https://*.youtube.com/*
 // @grant        none
@@ -15,48 +15,50 @@
     const HIDE_DELAY = 500; // 0.5 秒延遲隱藏
 
     const metadataSelector = '.metadata-container';
-    const shortsContainerSelector = '#shorts-container';
+    const shortsItemSelector = 'ytd-reel-video-renderer'; // 每個Shorts影片的容器
 
-    function setMetadataOpacity(opacity) {
-        document.querySelectorAll(metadataSelector).forEach(container => {
-            container.style.opacity = opacity;
+    // 處理滑鼠進入事件
+    function handleMouseEnter(event) {
+        const metadata = event.currentTarget.querySelector(metadataSelector);
+        if (metadata) {
+            clearTimeout(hideTimeout);
+            metadata.style.opacity = '1';
+        }
+    }
+
+    // 處理滑鼠離開事件
+    function handleMouseLeave(event) {
+        const metadata = event.currentTarget.querySelector(metadataSelector);
+        if (metadata) {
+            hideTimeout = setTimeout(() => {
+                metadata.style.opacity = '0';
+            }, HIDE_DELAY);
+        }
+    }
+
+    // 初始化所有metadata為隱藏
+    function initMetadata() {
+        document.querySelectorAll(metadataSelector).forEach(metadata => {
+            metadata.style.opacity = '0';
         });
     }
 
-    function hideMetadata() {
-        setMetadataOpacity('0');
-    }
-
-    function showMetadata() {
-        setMetadataOpacity('1');
-    }
-
-    function onMouseEnter(event) {
-        if (event.target.closest(shortsContainerSelector)) {
-            showMetadata();
-            clearTimeout(hideTimeout);
-        }
-    }
-
-    function onMouseLeave(event) {
-        if (event.target.closest(shortsContainerSelector)) {
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(hideMetadata, HIDE_DELAY);
-        }
-    }
-
-    // 使用 MutationObserver 監聽 DOM 變動，處理動態內容
+    // 使用 MutationObserver 監聽每個Shorts影片的出現
     const observer = new MutationObserver((mutations) => {
-        const shortsContainer = document.querySelector(shortsContainerSelector);
-        if (shortsContainer) {
-            shortsContainer.addEventListener('mouseenter', onMouseEnter, true);
-            shortsContainer.addEventListener('mouseleave', onMouseLeave, true);
-            observer.disconnect(); // 停止觀察，避免重複綁定
-        }
+        document.querySelectorAll(shortsItemSelector).forEach(item => {
+            if (!item.dataset.eventsBound) {
+                item.addEventListener('mouseenter', handleMouseEnter, true);
+                item.addEventListener('mouseleave', handleMouseLeave, true);
+                item.dataset.eventsBound = 'true'; // 標記已綁定事件
+                // 初始化該影片的metadata
+                const metadata = item.querySelector(metadataSelector);
+                if (metadata) metadata.style.opacity = '0';
+            }
+        });
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     // 初始隱藏
-    hideMetadata();
+    initMetadata();
 })();
